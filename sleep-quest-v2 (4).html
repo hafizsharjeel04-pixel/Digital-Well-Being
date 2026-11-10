@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sleep &amp; Study Quest</title>
+<style>
+:root{--sb:#0f172a;--ac:#4f46e5;--bg:#f1f5f9;--ln:#e2e8f0;--tx:#0f172a;--mu:#64748b;--ok:#10b981}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--tx);-webkit-font-smoothing:antialiased}
+[hidden]{display:none!important}
+h1,h2,p{margin:0}
+h1{font-size:1.7rem;font-weight:800}
+h2{font-size:1.1rem;font-weight:700}
+.muted{color:var(--mu);font-size:.92rem;margin-top:4px}
+.logo{font-size:3.4rem}
+#splash{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,#312e81,#4f46e5);color:#fff;text-align:center;z-index:9;animation:out .4s 1.1s forwards}
+#splash p{opacity:.85;margin-top:6px}
+@keyframes out{to{opacity:0;visibility:hidden}}
+.page{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(135deg,#eef2ff,#f8fafc)}
+.card{background:#fff;border:1px solid var(--ln);border-radius:16px;padding:22px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.04)}
+.auth{width:100%;max-width:420px}
+.wide{width:100%;max-width:640px}
+label{display:block;font-size:.8rem;color:var(--mu);margin:12px 0 6px;font-weight:600}
+input{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;background:#fff;color:var(--tx)}
+input:focus{outline:2px solid #c7d2fe;border-color:var(--ac)}
+.btn{background:var(--ac);color:#fff;border:0;border-radius:10px;padding:11px 18px;font:inherit;font-weight:600;cursor:pointer}
+.btn:hover{background:#4338ca}
+.btn.ghost{background:#fff;color:var(--ac);border:1px solid #c7d2fe}
+.btn.sm{padding:10px 14px;font-size:.88rem}
+.btn.full{width:100%}
+.row{display:flex;gap:10px;align-items:center}
+.err{color:#e11d48;font-size:.88rem;min-height:1.2em;margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.chip{border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:8px 14px;cursor:pointer;font:inherit;font-size:.9rem;color:var(--tx)}
+.chip.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+#app{display:flex;min-height:100vh}
+.side{width:230px;background:var(--sb);color:#cbd5e1;padding:22px 16px;position:sticky;top:0;height:100vh;flex:none}
+.brand{color:#fff;font-weight:800;margin:4px 8px 22px}
+.nav{display:flex;flex-direction:column;gap:4px}
+.nav button{background:none;border:0;color:#94a3b8;text-align:left;padding:11px 14px;border-radius:10px;font:inherit;cursor:pointer}
+.nav button:hover,.nav button.on{background:rgba(255,255,255,.08);color:#fff}
+main{flex:1;padding:30px 34px;min-width:0}
+.view{animation:up .3s ease}
+@keyframes up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}
+.stat{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:16px}
+.stat span{font-size:.8rem;color:var(--mu)}
+.stat b{display:block;font-size:1.6rem;margin-top:4px}
+.cols{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}
+.trow{display:grid;grid-template-columns:22px 1fr auto 26px;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--ln)}
+.trow input{width:18px;height:18px;accent-color:var(--ac)}
+.trow.done .ttext{text-decoration:line-through;color:var(--mu)}
+.time{font-size:.82rem;color:var(--mu);background:var(--bg);padding:4px 10px;border-radius:8px;white-space:nowrap}
+.del{background:none;border:0;color:#94a3b8;cursor:pointer;font-size:1rem}
+.act{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 0;border-bottom:1px solid var(--ln)}
+.act small{display:block;color:var(--mu);margin-top:2px}
+.bar{height:8px;background:var(--ln);border-radius:9px;overflow:hidden;margin-top:14px}
+.bar div{height:100%;background:var(--ok);width:0;transition:width .4s}
+.big{font-size:4rem;font-weight:800;font-variant-numeric:tabular-nums}
+#toast{position:fixed;bottom:20px;right:20px;background:var(--sb);color:#fff;padding:12px 18px;border-radius:12px;z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+@media(max-width:850px){#app{flex-direction:column}.side{width:auto;height:auto;position:static;padding:14px}.nav{flex-direction:row}.grid{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}main{padding:18px}}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.cell{aspect-ratio:1;border-radius:12px;border:0;background:#e0e7ff;font-size:1.8rem;cursor:pointer}
+.cell.open{background:#fff;border:2px solid #c7d2fe}
+.cell.ok{background:#d1fae5}
+#modal{position:fixed;inset:0;background:rgba(15,23,42,.55);display:grid;place-items:center;z-index:15}
+.mbox{background:#fff;border-radius:16px;padding:24px;max-width:440px;width:90%;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#scCard .bar,#freeCard{margin-bottom:0}
+#freeCard,#scCard{margin-bottom:14px}
+
+.side{display:flex;flex-direction:column}
+.nav{flex:0}
+
+.quote{background:linear-gradient(135deg,#4f46e5,#818cf8);color:#fff;border-radius:16px;padding:18px 22px;margin:16px 0;font-size:1.05rem;font-weight:600;box-shadow:0 10px 26px rgba(79,70,229,.25)}
+.quote small{display:block;opacity:.85;font-weight:400;margin-top:6px;font-size:.8rem}
+.grid3{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-top:16px}
+.act-card{background:#fff;border:1px solid var(--ln);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.act-card .tg{align-self:flex-start;font-size:.75rem;font-weight:700;color:#4338ca;background:#eef2ff;padding:4px 10px;border-radius:999px}
+.act-card b{font-size:1rem;line-height:1.4}
+.act-card .btn{margin-top:auto}
+</style>
+</head>
+<body>
+<div id="splash"><div class="logo">🌙</div><h1>Sleep &amp; Study Quest</h1><p>Plan your day. Protect your sleep.</p></div>
+
+<div id="auth" class="page" hidden>
+  <form class="card auth" id="authForm">
+    <h2>Create your account</h2>
+    <p class="muted">Your data is saved on this device (prototype).</p>
+    <label>Full name</label><input id="rName" placeholder="e.g. Sharjeel" autocomplete="name">
+    <label>Email</label><input id="rEmail" type="email" placeholder="you@example.com" autocomplete="email">
+    <label>Password (4+ characters)</label><input id="rPass" type="password" autocomplete="new-password">
+    <p class="err" id="authErr"></p>
+    <button class="btn full" type="submit" style="margin-top:14px">Continue</button>
+  </form>
+</div>
+
+<div id="onb" class="page" hidden>
+  <div class="card wide" id="step-int" hidden>
+    <p class="muted">Step 1 of 4</p>
+    <h2>What are your interests?</h2>
+    <p class="muted">Choose from the list, or add your own.</p>
+    <div class="chips" id="intChips"></div>
+    <div class="row"><input id="custInt" placeholder="Add your own interest"><button class="btn ghost sm" id="addInt">Add</button></div>
+    <button class="btn full" id="toGoal" style="margin-top:22px">Next</button>
+  </div>
+  <div class="card wide" id="step-goal" hidden>
+    <p class="muted">Step 2 of 4</p>
+    <h2>What is your goal?</h2>
+    <p class="muted">Choose or write your own.</p>
+    <div class="chips" id="goalChips"></div>
+    <div class="row"><input id="custGoal" placeholder="Write your own goal"><button class="btn ghost sm" id="addGoal">Add</button></div>
+    <div class="row" style="margin-top:22px"><button class="btn ghost" id="backGoal">Back</button><button class="btn" id="toScreen">Next</button></div>
+  </div>
+  <div class="card wide" id="step-screen" hidden>
+    <p class="muted">Step 3 of 4</p>
+    <h2>Your screen time</h2>
+    <div class="row">
+      <div style="flex:1"><label>Total phone hours per day right now</label><input type="number" id="scNow" min="0" max="24" step="0.5" placeholder="e.g. 5"></div>
+      <div style="flex:1"><label>Hours per day you want</label><input type="number" id="scTarget" min="0" max="24" step="0.5" placeholder="e.g. 2"></div>
+    </div>
+    <h3 style="margin-top:18px">Optional: time per app (hours per day)</h3>
+    <div class="row"><div style="flex:1"><label>Instagram</label><input class="ap" data-app="Instagram" type="number" min="0" step="0.5"></div><div style="flex:1"><label>TikTok</label><input class="ap" data-app="TikTok" type="number" min="0" step="0.5"></div></div>
+    <div class="row"><div style="flex:1"><label>YouTube</label><input class="ap" data-app="YouTube" type="number" min="0" step="0.5"></div><div style="flex:1"><label>Games</label><input class="ap" data-app="Games" type="number" min="0" step="0.5"></div></div>
+    <h3 style="margin-top:18px">Add more apps</h3>
+    <p class="muted small">Add any other app you use a lot, such as Chrome, Facebook or WhatsApp.</p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:2"><label>App name</label><input id="extraApp" placeholder="e.g. Chrome"></div>
+      <div style="flex:1"><label>Hours per day</label><input id="extraHours" type="number" min="0" step="0.5" placeholder="e.g. 1.5"></div>
+      <button class="btn ghost sm" id="addApp" type="button">Add</button>
+    </div>
+    <div id="extraList" class="chips" style="margin-top:10px"></div>
+    <div class="row" style="margin-top:22px"><button class="btn ghost" id="backScreen">Back</button><button class="btn" id="toSleep">Next</button></div>
+  </div>
+  <div class="card wide" id="step-sleep" hidden>
+    <p class="muted">Step 4 of 4</p>
+    <h2>Your sleep routine</h2>
+    <div class="row"><div style="flex:1"><label>Bedtime</label><input type="time" id="sTime"></div><div style="flex:1"><label>Wake-up time</label><input type="time" id="wTime"></div></div>
+    <div class="row" style="margin-top:22px"><button class="btn ghost" id="backSleep">Back</button><button class="btn" id="finish">Open dashboard</button></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <aside class="side">
+    <div class="brand">🌙 Sleep &amp; Study Quest</div>
+    <nav class="nav">
+      <button data-v="dash" class="on">Dashboard</button>
+      <button data-v="activities">Activities</button>
+      <button data-v="reports">Reports</button>
+      <button data-v="focus">Focus timer</button>
+      <button data-v="howto">How to use</button>
+      <button data-v="help">Help</button>
+      <button data-v="profile">Profile</button>
+    </nav>
+    <button class="btn ghost sm" id="sideLogout" style="margin-top:auto;width:100%">Log out</button>
+  </aside>
+  <main>
+    <section class="view" id="v-dash">
+      <h1 id="greet"></h1>
+      <p class="muted" id="today"></p>
+      <div class="grid" id="stats"></div>
+      <div class="cols">
+        <div class="card">
+          <h2>Today's schedule</h2>
+          <p class="muted">Add what you will do and when. An alarm rings at the start time.</p>
+          <form id="addForm" class="row" style="margin:14px 0;flex-wrap:wrap">
+            <input id="tText" placeholder="What will you do?" style="flex:2;min-width:180px">
+            <input type="time" id="tStart" title="Start time" style="flex:1">
+            <input type="time" id="tEnd" title="End time" style="flex:1">
+            <button class="btn sm" type="submit">Add</button>
+          </form>
+          <div class="bar"><div id="pbar"></div></div>
+          <div id="taskList"></div>
+        </div>
+        <div>
+          <div class="card" id="scCard"></div>
+          <div class="card" id="freeCard"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="v-reports" hidden>
+      <h1>Reports</h1>
+      <p class="muted">Daily report at 9 PM. Weekly report every Sunday at 9 PM.</p>
+      <div class="cols" style="margin-top:16px">
+        <div class="card"><h2>Today</h2><div id="repDaily"></div></div>
+        <div class="card"><h2>Last 7 days</h2><div id="repWeekly"></div></div>
+      </div>
+    </section>
+
+    <section class="view" id="v-activities" hidden>
+      <h1>Activities</h1>
+      <p class="muted">Real-world activities picked for your interests. Tap "Add to my schedule" to plan one for today.</p>
+      <div class="chips" id="actFilter" style="margin-top:16px"></div>
+      <div class="grid3" id="actGrid"></div>
+    </section>
+
+    <section class="view" id="v-focus" hidden>
+      <h1>Focus timer</h1>
+      <p class="muted">Put your phone away while the timer runs.</p>
+      <div class="card" style="max-width:420px;text-align:center;margin-top:16px">
+        <div class="row" id="presets" style="justify-content:center;margin-bottom:18px">
+          <button class="chip" data-m="15">15 min</button><button class="chip on" data-m="25">25 min</button><button class="chip" data-m="45">45 min</button>
+        </div>
+        <div class="big" id="fTime">25:00</div>
+        <div class="row" style="justify-content:center;margin-top:18px"><button class="btn" id="fStart">Start</button><button class="btn ghost" id="fReset">Reset</button></div>
+      </div>
+    </section>
+
+    <section class="view" id="v-howto" hidden>
+      <h1>How to use this app</h1>
+      <p class="muted">A complete step-by-step guide. You can also download it as a PDF.</p>
+      <a class="btn" href="Sleep-Study-Quest-How-To-Use.pdf" download style="display:inline-block;margin:16px 0;text-decoration:none">Download full PDF guide</a>
+        <div class="card" style="margin-bottom:14px"><h2>1. Getting started</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Open the app. A splash screen appears for a moment, then the app opens.</li><li>Create an account with your full name, email and a password of at least 4 characters.</li><li>If you already have an account, enter the same email and password to log in. A wrong password is rejected.</li><li>Your data is saved on this device only.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>2. Setting up your profile (4 steps)</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Step 1, Interests: choose from the list (Gym &amp; walks, Reading, Art, Sports, Coding, Music) or type your own interest and press Add.</li><li>Step 2, Goal: choose one or more goals (Focus on studies, Sleep on time, Stay fit, Scroll less, Learn a new skill) or write your own.</li><li>Step 3, Screen time: enter your total phone hours per day now and the hours per day you want. You can also add optional hours for Instagram, TikTok, YouTube and Games.</li><li>Step 4, Sleep routine: enter your bedtime and wake-up time. The app uses these to calculate your free time and your wind-down time (45 minutes before bed).</li><li>Press Next to move forward and Back to correct an earlier step.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>3. Dashboard (home page)</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Stats cards at the top show tasks today, completed tasks, your XP points and focus minutes.</li><li>Today&#x27;s schedule shows your tasks in time order with a progress bar.</li><li>Free time card shows the gaps between your tasks, between your wake-up time and your wind-down time. Gaps shorter than 20 minutes are not shown.</li><li>Screen time card shows your logged hours for today against your target. Enter today&#x27;s total hours and press Save to update it.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>4. Adding a task</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Type what you will do in the &#x27;What will you do?&#x27; box.</li><li>Choose a start time. This is required and sets your alarm.</li><li>Choose an end time (optional, but needed for the &#x27;Did you finish?&#x27; question).</li><li>Press Add. The task appears in today&#x27;s schedule.</li><li>Tick the box when you finish a task to get 10 XP. Untick it to remove the XP. Press the X to delete a task.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>5. Alarms and notifications</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>At a task&#x27;s start time an alarm sounds and a popup appears.</li><li>Snooze 5 min: the alarm rings again after 5 minutes.</li><li>Stop and start: the alarm stops and you begin the task.</li><li>At a task&#x27;s end time the app asks &#x27;Did you finish?&#x27;. Choose Yes to complete the task and get 10 XP. Choose No to add 30 minutes to the end time; the question returns when that time passes.</li><li>When you are free between tasks, the popup offers you a choice to add a task, see activities or take a break.</li><li>To get notifications when the app is in the background, open Profile and press Enable notifications, then allow notifications in your browser.</li><li>Alarms work only while the app is open in your browser. Keep the browser open, but you can use other tabs.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>6. Motivation popup</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Each time you open the app, a motivation popup appears. Press Let&#x27;s go! to close it.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>7. Activities</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Open the Activities tab to see real-world activities for your interests.</li><li>Use the filter buttons at the top to show one interest at a time.</li><li>Press Add to my schedule to put an activity into today&#x27;s schedule. Then choose a start time and press Add.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>8. Focus timer</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Open the Focus timer tab and choose 15, 25 or 45 minutes.</li><li>Press Start to begin, Pause to stop for a moment, and Reset to start over.</li><li>When a session finishes you earn XP equal to its minutes, and the time is added to your focus minutes for today.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>9. Reports</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>The Reports tab shows today&#x27;s report and the last 7 days.</li><li>A daily report popup appears at 9 PM each day.</li><li>A weekly report popup appears every Sunday at 9 PM.</li><li>Reports show tasks completed, focus time, screen time and days within your screen target.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>10. Help and privacy</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>The Help tab has the campus counselor number and helplines.</li><li>This app is not a doctor or counselor. If you feel overwhelmed or have thoughts of hurting yourself, talk to a trusted person or emergency service right away.</li><li>Your data stays on this device. It is not shared with parents, teachers or staff.</li><li>To delete everything, open the Help tab and press Delete my data.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>11. Profile, editing and logging out</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>The Profile tab shows your name, bedtime, wake-up time, screen target, interests and goals.</li><li>Press Edit preferences to change your interests, goals, screen time and sleep times.</li><li>Press Log out in the sidebar or on the Profile page to sign out. You will see the account screen next time.</li></ul></div>
+        <div class="card" style="margin-bottom:14px"><h2>12. Tips and troubleshooting</h2><ul style="line-height:1.6;padding-left:20px;margin:8px 0 0"><li>Use Google Chrome or Microsoft Edge for the best results.</li><li>If a popup does not appear, check that the app is open and that you have not clicked Not now on notifications.</li><li>If the alarm sound is silent, click anywhere on the page once; browsers need one click before playing sound.</li><li>If you see the account screen again after closing the app, that is expected. Log in with the same email and password.</li><li>If something does not work, press F12, open the Console tab and note the red error message.</li></ul></div>
+    </section>
+
+    <section class="view" id="v-help" hidden>
+      <h1>Help &amp; privacy</h1>
+      <p class="muted">Support and your data.</p>
+      <div class="card" style="max-width:560px;margin-top:16px">
+        <h2>Help, privacy and data</h2>
+        <p class="muted">This app is not a doctor or counselor. If you feel overwhelmed or have thoughts of hurting yourself, talk to a trusted person or your campus counselor right away.</p>
+        <p style="margin-top:10px"><b>Campus counselor:</b> <b>03202576693</b></p>
+        <p><b>Umang Helpline:</b> 0311-7786264 <span class="muted small">(verify before submission)</span></p>
+        <p><b>Edhi Helpline:</b> 115</p>
+        <p class="muted small" style="margin-top:10px">Your data is stored only on this device. It is not shared with parents, teachers or staff.</p>
+        <button class="btn ghost sm" id="delData" style="margin-top:12px">Delete my data</button>
+      </div>
+    </section>
+
+    <section class="view" id="v-profile" hidden>
+      <h1>Profile</h1>
+      <div class="card" style="max-width:560px;margin-top:16px">
+        <h2 id="pName"></h2>
+        <p class="muted" id="pMeta"></p>
+        <div class="row" style="margin-top:16px"><button class="btn ghost sm" id="editBtn">Edit preferences</button><button class="btn ghost sm" id="notifBtn">Enable notifications</button>
+        <button class="btn ghost sm" id="logout">Log out</button></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="modal" hidden><div class="mbox"><h2 id="mTitle"></h2><div class="muted" id="mBody"></div><div class="row" id="mBtns" style="margin-top:18px;flex-wrap:wrap"></div></div></div>
+<div id="toast" hidden></div>
+<script>
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const DB = {
+  g(k, d) { try { const v = localStorage.getItem('sqv5_' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  s(k, v) { localStorage.setItem('sqv5_' + k, JSON.stringify(v)); }
+};
+const pad2 = n => String(n).padStart(2, '0');
+const dkey = d => d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+const TODAY = () => dkey(new Date());
+const INTERESTS = ['Gym & walks', 'Reading', 'Art', 'Sports', 'Coding', 'Music'];
+const GOALS = ['Focus on studies', 'Sleep on time', 'Stay fit', 'Scroll less', 'Learn a new skill'];
+const ACT = {
+  'Gym & walks': ['30 min brisk walk outside', 'Gym session: squats, push-ups, plank', 'Yoga or stretching for 15 min'],
+  'Reading': ['Read 20 pages of a book', 'Visit the library and borrow a book'],
+  'Art': ['Sketch a real object at home for 20 min', 'Visit an art gallery or workshop'],
+  'Sports': ['Cricket or football practice with friends', 'Join a local sports club or league'],
+  'Coding': ['Build a small project for 45 min', 'Attend a coding meetup or workshop', 'Solve 2 problems on a coding site'],
+  'Music': ['Practice an instrument for 30 min', 'Join a local music class or jam']
+};
+let accounts = DB.g('accounts', {}), me = DB.g('me', null);
+let sel = { int: [], goal: [] }, fMin = 25, fLeft = 1500, fT = null, ringT = null, actx = null;
+const user = () => accounts[me];
+const save = () => { DB.s('accounts', accounts); DB.s('me', me); };
+const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fmt = m => String(Math.floor(m / 60) % 24).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0');
+const nowMin = () => new Date().getHours() * 60 + new Date().getMinutes();
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function toast(m) { const t = $('#toast'); t.textContent = m; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(() => t.hidden = true, 2000); }
+function show(id) { ['auth', 'onb', 'app'].forEach(x => $('#' + x).hidden = x !== id); }
+const QUOTES = [
+  'Consistency is the key to success.',
+  'Small steps taken every day lead to big results.',
+  'Discipline beats motivation.',
+  'Your future is built by what you do today.',
+  'Done is better than perfect.',
+  'Progress, not perfection.'
+];
+function notify(title, body) {
+  // Shows a system notification when the app is in the background (other tab, other app, phone locked).
+  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+    try { new Notification(title, { body }); } catch (e) {}
+  }
+}
+let motivShown = false;
+function showMotivation() {
+  const q = QUOTES[Math.floor(Math.random() * QUOTES.length)];
+  openModal('motiv', 'Stay consistent', `<p style="font-size:1.1rem;color:#0f172a;font-weight:600">"${esc(q)}"</p>`,
+    [['ok', "Let's go!"]]);
+}
+let actFilter = 'All';
+function renderActivities() {
+  const u = user();
+  const cats = ['All', ...u.interests];
+  if (!cats.includes(actFilter)) actFilter = 'All';
+  $('#actFilter').innerHTML = cats.map(c => `<button class="chip ${c === actFilter ? 'on' : ''}" data-f="${esc(c)}">${esc(c)}</button>`).join('');
+  const list = (actFilter === 'All' ? u.interests : [actFilter]).flatMap(i =>
+    (ACT[i] || [`20 min of ${i}`, `Find one local ${i} group or class`]).map(a => ({ i, a })));
+  $('#actGrid').innerHTML = list.length
+    ? list.map(({ i, a }) => `<div class="act-card"><span class="tg">${esc(i)}</span><b>${esc(a)}</b><button class="btn ghost sm" data-add="${esc(a)}">Add to my schedule</button></div>`).join('')
+    : '<p class="muted">Add interests during setup to see activities.</p>';
+}
+$('#actFilter').onclick = e => { const f = e.target.dataset.f; if (!f) return; actFilter = f; renderActivities(); };
+$('#actGrid').onclick = e => {
+  const a = e.target.dataset.add; if (!a) return;
+  openView('dash'); $('#tText').value = a; $('#tStart').focus(); toast('Pick a start time, then Add');
+};
+
+function openView(v) {
+  $$('.nav button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
+  $$('.view').forEach(x => x.hidden = x.id !== 'v-' + v);
+  if (v === 'profile') renderProfile();
+  if (v === 'reports') renderReports();
+  if (v === 'activities') renderActivities();
+}
+
+// ----- Routing -----
+function route() {
+  if (!me || !accounts[me]) return show('auth');
+  const u = user();
+  if (!u.interests.length) return onb(1);
+  if (!u.goals.length) return onb(2);
+  if (!u.screen) return onb(3);
+  if (!u.sleep) return onb(4);
+  show('app'); openView('dash'); renderDash();
+  if (!motivShown) { motivShown = true; showMotivation(); }
+}
+function onb(step) {
+  const u = user();
+  if (step === 1) sel.int = [...u.interests];
+  if (step === 2) sel.goal = [...u.goals];
+  show('onb');
+  ['step-int', 'step-goal', 'step-screen', 'step-sleep'].forEach((id, i) => $('#' + id).hidden = i !== step - 1);
+  renderChips();
+  if (step === 3) {
+    const known = ['Instagram', 'TikTok', 'YouTube', 'Games'];
+    sel.extra = Object.fromEntries(Object.entries((u.screen || {}).apps || {}).filter(([k]) => !known.includes(k)));
+    renderExtra();
+  }
+  if (step === 3 && u.screen) {
+    $('#scNow').value = u.screen.now; $('#scTarget').value = u.screen.target;
+    $$('.ap').forEach(i => i.value = (u.screen.apps || {})[i.dataset.app] ?? '');
+  }
+  if (step === 4) { $('#sTime').value = u.sleep || '23:30'; $('#wTime').value = u.wake || '07:00'; }
+}
+
+// ----- Splash & auth -----
+setTimeout(() => { $('#splash').style.display = 'none'; route(); }, 1400);
+$('#authForm').onsubmit = e => {
+  e.preventDefault();
+  const name = $('#rName').value.trim(), em = $('#rEmail').value.trim().toLowerCase(), pw = $('#rPass').value;
+  if (!name || !em.includes('@') || pw.length < 4) { $('#authErr').textContent = 'Enter name, a valid email and a 4+ character password.'; return; }
+  const a = accounts[em];
+  if (a && a.pass !== pw) { $('#authErr').textContent = 'Wrong password for this email.'; return; }
+  if (!a) accounts[em] = { name, pass: pw, interests: [], goals: [], screen: null, sleep: '', wake: '', tasks: [], logs: {}, xp: 0 };
+  me = em; save(); route();
+};
+
+// ----- Onboarding -----
+function chipHTML(list, arr, key) {
+  return [...new Set([...list, ...arr])].map(x =>
+    `<button type="button" class="chip ${arr.includes(x) ? 'on' : ''}" data-k="${key}" data-v="${esc(x)}">${esc(x)}</button>`).join('');
+}
+function renderChips() { $('#intChips').innerHTML = chipHTML(INTERESTS, sel.int, 'int'); $('#goalChips').innerHTML = chipHTML(GOALS, sel.goal, 'goal'); }
+document.addEventListener('click', e => {
+  const c = e.target.closest('.chip[data-k]'); if (!c) return;
+  const arr = sel[c.dataset.k], v = c.dataset.v;
+  arr.includes(v) ? arr.splice(arr.indexOf(v), 1) : arr.push(v);
+  renderChips();
+});
+function renderExtra() {
+  const list = Object.entries(sel.extra || {});
+  $('#extraList').innerHTML = list.length
+    ? list.map(([k, v]) => `<span class="chip on" data-x="${esc(k)}">${esc(k)} · ${v}h ✕</span>`).join('')
+    : '<span class="muted small">No extra apps added yet.</span>';
+}
+$('#extraList').onclick = e => {
+  const k = e.target.closest('[data-x]'); if (!k) return;
+  delete sel.extra[k.dataset.x]; renderExtra();
+};
+$('#addApp').onclick = () => {
+  const name = $('#extraApp').value.trim(), hrs = $('#extraHours').value;
+  if (!name) return toast('Enter the app name');
+  if (hrs === '') return toast('Enter hours per day');
+  const match = $$('.ap').find(i => i.dataset.app.toLowerCase() === name.toLowerCase());
+  if (match) { match.value = hrs; toast(`${match.dataset.app} updated`); }
+  else { sel.extra = sel.extra || {}; sel.extra[name] = +hrs; toast(`${name} added`); }
+  $('#extraApp').value = ''; $('#extraHours').value = ''; renderExtra();
+};
+const addCustom = (k, id) => { const v = $(id).value.trim(); if (v && !sel[k].includes(v)) sel[k].push(v); $(id).value = ''; renderChips(); };
+$('#addInt').onclick = () => addCustom('int', '#custInt');
+$('#addGoal').onclick = () => addCustom('goal', '#custGoal');
+$('#toGoal').onclick = () => { if (!sel.int.length) return toast('Choose at least one interest'); user().interests = [...sel.int]; save(); onb(2); };
+$('#backGoal').onclick = () => onb(1);
+$('#toScreen').onclick = () => { if (!sel.goal.length) return toast('Choose at least one goal'); user().goals = [...sel.goal]; save(); onb(3); };
+$('#backScreen').onclick = () => onb(2);
+$('#toSleep').onclick = () => {
+  const now = $('#scNow').value, target = $('#scTarget').value;
+  if (now === '' || target === '') return toast('Enter your total screen time now and your target');
+  const apps = { ...(sel.extra || {}) };
+  $$('.ap').forEach(i => { if (i.value !== '') apps[i.dataset.app] = +i.value; });
+  user().screen = { now: +now, target: +target, apps }; save(); onb(4);
+};
+$('#backSleep').onclick = () => onb(3);
+$('#finish').onclick = () => {
+  const s = $('#sTime').value, w = $('#wTime').value;
+  if (!s || !w) return toast('Enter both times');
+  Object.assign(user(), { sleep: s, wake: w }); save(); toast('Welcome aboard!'); route();
+};
+
+// ----- Schedule & free time -----
+function dayTasks() { return user().tasks.filter(t => t.date === TODAY()).sort((a, b) => toMin(a.start || '00:00') - toMin(b.start || '00:00')); }
+function freeGaps() {
+  const u = user(), start = toMin(u.wake || '07:00');
+  let end = toMin(u.sleep || '23:30') - 45; if (end <= start) end += 1440;
+  const busy = dayTasks().filter(t => t.start && t.end).map(t => [toMin(t.start), toMin(t.end)]).sort((a, b) => a[0] - b[0]);
+  let cur = start; const gaps = [];
+  busy.forEach(([s, e]) => { if (s - cur >= 20) gaps.push([cur, s]); cur = Math.max(cur, e); });
+  if (end - cur >= 20) gaps.push([cur, end]);
+  return gaps;
+}
+
+// ----- Dashboard -----
+function renderDash() {
+  const u = user(), h = new Date().getHours();
+  $('#greet').textContent = (h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening') + ', ' + u.name.split(' ')[0];
+  $('#today').textContent = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  const t = dayTasks(), d = t.filter(x => x.done).length, st = dayStats(TODAY());
+  $('#stats').innerHTML = [['Tasks today', t.length], ['Completed', d], ['XP', u.xp], ['Focus minutes', st.focus]]
+    .map(([a, b]) => `<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('');
+  $('#taskList').innerHTML = t.length ? t.map(x => `
+    <div class="trow ${x.done ? 'done' : ''}">
+      <input type="checkbox" data-id="${x.id}" ${x.done ? 'checked' : ''}>
+      <div class="ttext">${esc(x.text)}</div>
+      <span class="time">${x.start || '--:--'} – ${x.end || '--:--'}</span>
+      <button class="del" data-del="${x.id}" title="Delete">✕</button>
+    </div>`).join('') : '<p class="muted" style="padding:14px 0">No tasks yet. Add your first task above.</p>';
+  $('#pbar').style.width = (t.length ? d / t.length * 100 : 0) + '%';
+
+  const s = u.screen, logged = st.screen;
+  const cur = logged ?? s.now, target = Math.max(s.target, 0.1);
+  const apps = Object.entries(s.apps || {}).map(([k, v]) => `${k} ${v}h`).join(', ');
+  $('#scCard').innerHTML = `<h2>Screen time</h2>
+    <p class="muted">${apps ? 'Apps: ' + esc(apps) : 'No per-app details added.'}</p>
+    <p style="margin:10px 0"><b>${cur}h</b> today · target <b>${s.target}h</b></p>
+    <div class="bar"><div style="width:${Math.min(100, cur / target * 100)}%;background:${cur > s.target ? '#e11d48' : '#10b981'}"></div></div>
+    <div class="row" style="margin-top:12px"><input type="number" id="scLog" min="0" max="24" step="0.5" placeholder="Today's hours"><button class="btn sm" id="saveScreen">Save</button></div>`;
+
+  const g = freeGaps();
+  $('#freeCard').innerHTML = `<h2>Free time today</h2>` + (g.length
+    ? g.map(([a, b]) => `<div class="act"><b>${fmt(a)} – ${fmt(b)}</b><span class="time">${b - a} min</span></div>`).join('')
+    : '<p class="muted">No free slots left today.</p>');
+
+}
+$('#scCard').onclick = e => {
+  if (e.target.id !== 'saveScreen') return;
+  const v = $('#scLog').value; if (v === '') return toast('Enter hours');
+  const u = user(), k = TODAY(); u.logs[k] = u.logs[k] || { focus: 0 }; u.logs[k].screen = +v; save(); renderDash(); toast('Screen time saved');
+};
+$('#addForm').onsubmit = e => {
+  e.preventDefault();
+  const text = $('#tText').value.trim(), start = $('#tStart').value, end = $('#tEnd').value;
+  if (!text) return toast('Please write your task');
+  if (!start) return toast('Please choose a start time');
+  if (end && toMin(end) <= toMin(start)) return toast('End time must be after start time');
+  user().tasks.push({ id: Date.now() + Math.random().toString(36).slice(2, 6), text, start, end, date: TODAY(), done: false, alarmDone: false, nextAlarm: 0, endAnswered: false });
+  save(); $('#addForm').reset(); renderDash(); toast('Task added');
+};
+$('#taskList').onchange = e => {
+  const u = user(), t = u.tasks.find(x => x.id === e.target.dataset.id); if (!t) return;
+  t.done = e.target.checked; u.xp = Math.max(0, u.xp + (t.done ? 10 : -10)); save(); renderDash();
+};
+$('#taskList').onclick = e => {
+  const id = e.target.dataset.del; if (!id) return;
+  const u = user(); u.tasks = u.tasks.filter(x => x.id !== id); save(); renderDash();
+};
+
+// ----- Alarms, end-of-task questions, reports (one popup at a time) -----
+function beep() {
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.frequency.value = 880; g.gain.value = 0.15; o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime + 0.4);
+  } catch (e) {}
+}
+function openModal(kind, title, body, btns, id) {
+  $('#mTitle').textContent = title; $('#mBody').innerHTML = body;
+  $('#mBtns').innerHTML = btns.map(([a, label, cls]) => `<button class="btn ${cls || ''}" data-a="${a}">${label}</button>`).join('');
+  $('#modal').dataset.kind = kind; $('#modal').dataset.id = id || ''; $('#modal').hidden = false;
+}
+function closeModal() { clearInterval(ringT); ringT = null; $('#modal').hidden = true; }
+const taskDue = t => t.start && !t.done && !t.alarmDone && (t.nextAlarm ? Date.now() >= t.nextAlarm : nowMin() >= toMin(t.start));
+const endDue = t => t.end && !t.done && !t.endAnswered && nowMin() >= toMin(t.end);
+function checkAll() {
+  const u = user();
+  if (!u || !u.tasks || $('#app').hidden || !$('#modal').hidden) return;
+  const list = dayTasks();
+  const a = list.find(taskDue);
+  if (a) {
+    openModal('alarm', 'Time to start', `<b>${esc(a.text)}</b> is scheduled now (${a.start}).`,
+      [['snooze', 'Snooze 5 min', 'ghost'], ['stop', 'Stop and start']], a.id);
+    notify('Time to start', a.text + ' starts now');
+    ringT = setInterval(beep, 1500); beep(); return;
+  }
+  const e = list.find(endDue);
+  if (e) notify('Did you finish?', e.text);
+  if (e) return openModal('end', 'Did you finish?', `<b>${esc(e.text)}</b> was planned until ${e.end}.`,
+    [['yes', 'Yes, finished'], ['no', 'No, +30 min', 'ghost']], e.id);
+  if (nowMin() >= 21 * 60 && u.dailyRep !== TODAY()) { u.dailyRep = TODAY(); save(); return openModal('report', 'Daily report', dailyText(TODAY()), [['ok', 'Close']]); }
+  if (new Date().getDay() === 0 && nowMin() >= 21 * 60 && u.weekRep !== TODAY()) { u.weekRep = TODAY(); save(); return openModal('report', 'Weekly report', weeklyText(), [['ok', 'Close']]); }
+}
+$('#mBtns').onclick = e => {
+  const a = e.target.dataset.a; if (!a) return;
+  const kind = $('#modal').dataset.kind, u = user(), t = u.tasks.find(x => x.id === $('#modal').dataset.id);
+  if (kind === 'alarm' && t) {
+    if (a === 'snooze') t.nextAlarm = Date.now() + 5 * 60000;
+    else { t.alarmDone = true; toast("Good luck, let's start!"); }
+  }
+  if (kind === 'end' && t) {
+    if (a === 'yes') { t.done = true; t.endAnswered = true; u.xp += 10; toast('Great job! +10 XP'); }
+    else { t.end = fmt(toMin(t.end) + 30); t.endAnswered = false; toast('Time extended by 30 minutes'); }
+  }
+  closeModal(); save(); renderDash();
+};
+
+// Reports
+function dayStats(d) {
+  const u = user(), ts = u.tasks.filter(t => t.date === d), l = (u.logs || {})[d] || {};
+  return { total: ts.length, done: ts.filter(t => t.done).length, focus: l.focus || 0, screen: l.screen ?? null };
+}
+function dailyText(d) {
+  const s = dayStats(d), u = user();
+  const verdict = s.total && s.done === s.total ? 'Excellent. Every task is done.' : s.done ? 'Good progress. Plan a little less tomorrow if needed.' : 'No tasks completed today. Start small tomorrow.';
+  return `<p>Tasks completed: <b>${s.done}/${s.total}</b></p><p>Focus time: <b>${s.focus} min</b></p>
+    <p>Screen time: <b>${s.screen ?? 'not logged'}${s.screen !== null ? 'h' : ''}</b> (target ${u.screen.target}h)</p><p style="margin-top:8px">${verdict}</p>`;
+}
+function weeklyText() {
+  const days = [...Array(7)].map((_, i) => { const x = new Date(); x.setDate(x.getDate() - (6 - i)); return dkey(x); });
+  const st = days.map(dayStats);
+  const total = st.reduce((a, s) => a + s.total, 0), done = st.reduce((a, s) => a + s.done, 0);
+  const focus = st.reduce((a, s) => a + s.focus, 0);
+  const logged = st.filter(s => s.screen !== null);
+  const within = logged.filter(s => s.screen <= user().screen.target).length;
+  return `<p>Tasks completed: <b>${done}/${total}</b></p><p>Total focus: <b>${(focus / 60).toFixed(1)} h</b></p>
+    <p>Days within screen target: <b>${within}/${logged.length} logged days</b></p>`;
+}
+function renderReports() {
+  $('#repDaily').innerHTML = dailyText(TODAY());
+  const days = [...Array(7)].map((_, i) => { const x = new Date(); x.setDate(x.getDate() - (6 - i)); return dkey(x); });
+  $('#repWeekly').innerHTML = weeklyText() + days.map(d => {
+    const s = dayStats(d), pct = s.total ? Math.round(s.done / s.total * 100) : 0;
+    return `<div class="act"><span>${d.slice(5)}</span><div class="bar" style="flex:1;margin:0 12px"><div style="width:${pct}%"></div></div><span class="time">${s.done}/${s.total}</span></div>`;
+  }).join('');
+}
+setInterval(checkAll, 15000);
+
+// ----- Navigation & profile -----
+$$('.nav button').forEach(b => b.onclick = () => openView(b.dataset.v));
+function renderProfile() {
+  const u = user();
+  $('#pName').textContent = u.name;
+  $('#pMeta').textContent = `${me} · Bedtime ${u.sleep} · Wake-up ${u.wake} · Screen target ${u.screen.target}h · Interests: ${u.interests.join(', ')} · Goals: ${u.goals.join(', ')}`;
+}
+$('#editBtn').onclick = () => onb(1);
+const doLogout = () => { me = null; save(); location.reload(); };
+$('#logout').onclick = doLogout;
+$('#notifBtn').onclick = () => {
+  if (!('Notification' in window)) return toast('Notifications are not supported in this browser');
+  Notification.requestPermission().then(p => toast(p === 'granted' ? 'Notifications enabled' : 'Notifications not allowed'));
+};
+$('#delData').onclick = () => { if (!confirm('Delete your account and all data on this device?')) return; delete accounts[me]; me = null; save(); location.reload(); };
+$('#sideLogout').onclick = doLogout;
+
+// ----- Focus timer -----
+function drawF() { $('#fTime').textContent = String(Math.floor(fLeft / 60)).padStart(2, '0') + ':' + String(fLeft % 60).padStart(2, '0'); }
+$$('#presets .chip').forEach(b => b.onclick = () => {
+  if (fT) return;
+  fMin = +b.dataset.m; fLeft = fMin * 60; drawF();
+  $$('#presets .chip').forEach(x => x.classList.toggle('on', x === b));
+});
+$('#fStart').onclick = () => {
+  if (fT) { clearInterval(fT); fT = null; $('#fStart').textContent = 'Start'; return; }
+  $('#fStart').textContent = 'Pause';
+  fT = setInterval(() => {
+    fLeft--; drawF();
+    if (fLeft <= 0) {
+      clearInterval(fT); fT = null; fLeft = fMin * 60; drawF(); $('#fStart').textContent = 'Start';
+      const u = user(), k = TODAY(); u.logs[k] = u.logs[k] || {}; u.logs[k].focus = (u.logs[k].focus || 0) + fMin;
+      u.xp += fMin; save(); toast(`Focus session complete! +${fMin} XP`);
+    }
+  }, 1000);
+};
+$('#fReset').onclick = () => { clearInterval(fT); fT = null; fLeft = fMin * 60; drawF(); $('#fStart').textContent = 'Start'; };
+drawF();
+
+</script>
+</body>
+</html>
